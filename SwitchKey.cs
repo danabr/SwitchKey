@@ -6,13 +6,14 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
-class WindowSelector : Form {
-
+class WindowSelector : Form
+{
   private ComboBox searchBox; 
   private List<ProcessInfo> processInfo = new List<ProcessInfo>();
   private string lastSearchTerm;
 
-  public WindowSelector() {
+  public WindowSelector()
+  {
     this.ClientSize = new Size(600, 190);
     this.Text = "Window Selector";
     this.StartPosition = FormStartPosition.CenterScreen;
@@ -38,13 +39,16 @@ class WindowSelector : Form {
       (uint) Hotkeys.MOD_CONTROL, (uint) key);
   }
 
-  protected override void WndProc(ref Message m) {
+  protected override void WndProc(ref Message m)
+  {
     base.WndProc(ref m);
     
-    if(m.Msg == Hotkeys.WM_HOTKEY) {
+    if(m.Msg == Hotkeys.WM_HOTKEY)
+    {
       GetProcessInfoList(Process.GetProcesses());
       this.searchBox.Items.Clear();
-      foreach(ProcessInfo p in processInfo) {
+      foreach(ProcessInfo p in processInfo)
+      {
         this.searchBox.Items.Add(p);
       }
       this.searchBox.Text = "";
@@ -54,47 +58,63 @@ class WindowSelector : Form {
     }
   }
 
-  private void GetProcessInfoList(Process[] processes) {
+  private void GetProcessInfoList(Process[] processes)
+  {
     this.processInfo.Clear();
-    foreach(Process p in processes) {
+    foreach(Process p in processes)
+    {
       processInfo.Add(new ProcessInfo(p));
     } 
   }
 
-  protected void HandleSearch(object sender, KeyEventArgs e) {
-    if(e.KeyCode == Keys.Enter) {
+  protected void HandleSearch(object sender, KeyEventArgs e)
+  {
+    if(e.KeyCode == Keys.Enter)
+    {
       HandleFocus(sender, e);
       return;
-    } else if(e.KeyCode == Keys.Escape) {
+    }
+    else if(e.KeyCode == Keys.Escape)
+    {
       this.Visible = false;
       return;
     }
 
     string matchText = searchBox.Text;
-    if(matchText == this.lastSearchTerm) {
+    if(matchText == this.lastSearchTerm)
+    {
       return;
-    } else {
+    }
+    else
+    {
       this.lastSearchTerm = matchText;
     }
     var matchRegex = new Regex(Regex.Escape(matchText),
                                 RegexOptions.IgnoreCase);
     
     var matches = new List<ProcessInfo>();
-    foreach(ProcessInfo p in this.processInfo) {
+    foreach(ProcessInfo p in this.processInfo)
+    {
       var match = matchRegex.Match(p.ToString());
-      if(match.Length > 0) {
+      if(match.Length > 0)
+      {
         matches.Add(p);
       }
     }
 
     this.searchBox.Items.Clear();
-    foreach(ProcessInfo processInfo in matches) {
+    foreach(ProcessInfo processInfo in matches)
+    {
       this.searchBox.Items.Add(processInfo);
     }
-    if(matches.Count > 1) {
+    if(matches.Count > 1)
+    {
       this.searchBox.Select(matchText.Length, 0);
-    } else {
-      if(matches.Count == 1) {
+    }
+    else
+    {
+      if(matches.Count == 1)
+      {
         this.searchBox.Text = matches[0].ToString();
         System.Threading.Thread.Sleep(200);
         HandleFocus(sender, e);
@@ -103,9 +123,11 @@ class WindowSelector : Form {
     }
   }
 
-  protected void HandleFocus(object sender, EventArgs e) {
+  protected void HandleFocus(object sender, EventArgs e)
+  {
     var selected = (ProcessInfo)this.searchBox.SelectedItem;
-    if(selected != null) {
+    if(selected != null)
+    {
       this.Visible = false;
       var hWnd = selected.Process.MainWindowHandle;
       WindowManager.ShowWindow(hWnd, WindowManager.SW_RESTORE);
@@ -115,14 +137,17 @@ class WindowSelector : Form {
   }
 };
 
-class ProcessInfo {
+class ProcessInfo
+{
   public Process Process { get; private set; }
 
-  public ProcessInfo(Process p) {
+  public ProcessInfo(Process p)
+  {
     this.Process = p;
   }
 
-  public override String ToString() {
+  public override String ToString()
+  {
     return Process.ProcessName + " - " + Process.MainWindowTitle;
   }
 }

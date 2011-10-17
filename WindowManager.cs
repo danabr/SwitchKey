@@ -1,7 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 
-class WindowManager {
+class WindowManager
+{
   public static int SW_RESTORE = 9;
 
   [DllImport("user32")]

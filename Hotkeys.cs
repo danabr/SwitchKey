@@ -1,7 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 
-class Hotkeys {
+class Hotkeys
+{
   public static int MOD_ALT = 0x1;
   public static int MOD_CONTROL = 0x2;
   public static int MOD_SHIFT = 0x4;
