@@ -1,1 +1,1 @@
-csc /t:winexe /out:SwitchKey.exe SwitchKey.cs
+csc /t:winexe /out:SwitchKey.exe Hotkeys.cs SwitchKey.cs
