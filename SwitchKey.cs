@@ -14,126 +14,133 @@ class WindowSelector : Form
 
     public WindowSelector()
     {
-      this.ClientSize = new Size(600, 190);
-      this.Text = "Window Selector";
-      this.StartPosition = FormStartPosition.CenterScreen;
-      this.lastSearchTerm = String.Empty;
+        this.ClientSize = new Size(600, 190);
+        this.Text = "Window Selector";
+        this.StartPosition = FormStartPosition.CenterScreen;
+        this.lastSearchTerm = String.Empty;
 
-      this.searchBox = new ComboBox();
-      this.searchBox.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.searchBox.DropDownStyle = ComboBoxStyle.Simple;
-      this.searchBox.Font = new Font(new FontFamily("Tahoma"), 18);
-      this.searchBox.KeyUp += new KeyEventHandler(HandleSearch);
-      this.searchBox.BackColor = Color.YellowGreen; //Moccasin;
-      this.Controls.Add(this.searchBox);
+        this.searchBox = new ComboBox();
+        this.searchBox.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.searchBox.DropDownStyle = ComboBoxStyle.Simple;
+        this.searchBox.Font = new Font(new FontFamily("Tahoma"), 18);
+        this.searchBox.KeyUp += new KeyEventHandler(HandleSearch);
+        this.searchBox.BackColor = Color.YellowGreen; //Moccasin;
+        this.Controls.Add(this.searchBox);
 
-      this.ResumeLayout(false);
-      this.PerformLayout();
-      this.FormBorderStyle = FormBorderStyle.None;
-      SetStyle(ControlStyles.SupportsTransparentBackColor, true);
-      this.BackColor = Color.Transparent;
-      this.Opacity = 0.85;
+        this.ResumeLayout(false);
+        this.PerformLayout();
+        this.FormBorderStyle = FormBorderStyle.None;
+        SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+        this.BackColor = Color.Transparent;
+        this.Opacity = 0.85;
 
-      Keys key = Keys.L & ~Keys.Control & ~ Keys.Shift & ~Keys.Alt;
-      Hotkeys.RegisterHotKey((IntPtr)this.Handle, this.GetHashCode(),
-        (uint) Hotkeys.MOD_CONTROL, (uint) key);
+        RegisterHotKey();
+    }
+
+    private void RegisterHotKey()
+    {
+        Keys key = Keys.L & ~Keys.Control & ~ Keys.Shift & ~Keys.Alt;
+        Hotkeys.RegisterHotKey((IntPtr)this.Handle, this.GetHashCode(),
+            (uint) Hotkeys.MOD_CONTROL, (uint) key);
     }
 
     protected override void WndProc(ref Message m)
     {
       base.WndProc(ref m);
       
-      if(m.Msg == Hotkeys.WM_HOTKEY)
+      if (m.Msg == Hotkeys.WM_HOTKEY)
       {
-        GetProcessInfoList(Process.GetProcesses());
-        this.searchBox.Items.Clear();
-        foreach(ProcessInfo p in processInfo)
-        {
-          this.searchBox.Items.Add(p);
-        }
-        this.searchBox.Text = "";
-        this.Visible = true;
-        this.Focus();
-        this.Activate();
+          UpdateProcessList(Process.GetProcesses());
+          UpdateSearchBox();
+          Display();
       }
     }
+    
+    private void UpdateSearchBox()
+    {
+        this.searchBox.Items.Clear();
+        foreach(ProcessInfo p in processInfo)
+            this.searchBox.Items.Add(p);
+        this.searchBox.Text = "";
+    }
 
-    private void GetProcessInfoList(Process[] processes)
+    private void UpdateProcessList(Process[] processes)
     {
       this.processInfo.Clear();
       foreach(Process p in processes)
-      {
-        processInfo.Add(new ProcessInfo(p));
-      } 
+          processInfo.Add(new ProcessInfo(p));
+    }
+
+    private void Display()
+    {
+        this.Visible = true;
+        this.Focus();
+        this.Activate();
     }
 
     protected void HandleSearch(object sender, KeyEventArgs e)
     {
-      if(e.KeyCode == Keys.Enter)
-      {
-        HandleFocus(sender, e);
-        return;
-      }
-      else if(e.KeyCode == Keys.Escape)
-      {
-        this.Visible = false;
-        return;
-      }
-
-      string matchText = searchBox.Text;
-      if(matchText == this.lastSearchTerm)
-      {
-        return;
-      }
+      if (e.KeyCode == Keys.Enter)
+          DisplaySelectedWindow(); 
+      else if (e.KeyCode == Keys.Escape)
+          this.Visible = false;
       else
-      {
-        this.lastSearchTerm = matchText;
-      }
-      var matchRegex = new Regex(Regex.Escape(matchText),
-                                  RegexOptions.IgnoreCase);
-      
-      var matches = new List<ProcessInfo>();
-      foreach(ProcessInfo p in this.processInfo)
-      {
-        var match = matchRegex.Match(p.ToString());
-        if(match.Length > 0)
-        {
-          matches.Add(p);
-        }
-      }
+          PerformSearch();
+    }
 
-      this.searchBox.Items.Clear();
-      foreach(ProcessInfo processInfo in matches)
+    protected void DisplaySelectedWindow()
+    {
+      var selected = (ProcessInfo)this.searchBox.SelectedItem;
+      if (selected != null)
       {
-        this.searchBox.Items.Add(processInfo);
-      }
-      if(matches.Count > 1)
-      {
-        this.searchBox.Select(matchText.Length, 0);
-      }
-      else
-      {
-        if(matches.Count == 1)
-        {
-          this.searchBox.Text = matches[0].ToString();
-          System.Threading.Thread.Sleep(200);
-          HandleFocus(sender, e);
-        }
-        this.searchBox.Select(matchText.Length, this.searchBox.Text.Length);
+          this.Visible = false;
+          var hWnd = selected.Process.MainWindowHandle;
+          WindowManager.ShowWindow(hWnd, WindowManager.SW_RESTORE);
+          WindowManager.BringWindowToTop(hWnd);
+          WindowManager.SetForegroundWindow(hWnd); 
       }
     }
 
-    protected void HandleFocus(object sender, EventArgs e)
+    protected void PerformSearch()
     {
-      var selected = (ProcessInfo)this.searchBox.SelectedItem;
-      if(selected != null)
+      string matchText = searchBox.Text;
+      if (matchText == this.lastSearchTerm)
+          return;
+      else
+          this.lastSearchTerm = matchText;
+
+      this.searchBox.Items.Clear();
+      var matches = FindMatchingProcesses(matchText);
+      foreach(ProcessInfo processInfo in matches)
+          this.searchBox.Items.Add(processInfo);
+
+      if (matches.Count > 1)
+          this.searchBox.Select(matchText.Length, 0);
+      else
       {
-        this.Visible = false;
-        var hWnd = selected.Process.MainWindowHandle;
-        WindowManager.ShowWindow(hWnd, WindowManager.SW_RESTORE);
-        WindowManager.BringWindowToTop(hWnd);
-        WindowManager.SetForegroundWindow(hWnd); 
+          if (matches.Count == 1)
+          {
+              this.searchBox.Text = matches[0].ToString();
+              System.Threading.Thread.Sleep(200);
+              DisplaySelectedWindow();
+          }
+          this.searchBox.Select(matchText.Length,
+                                this.searchBox.Text.Length);
       }
+    }
+
+    private List<ProcessInfo> FindMatchingProcesses(string matchText)
+    {
+        var matchRegex = new Regex(Regex.Escape(matchText),
+                                  RegexOptions.IgnoreCase);
+        var matches = new List<ProcessInfo>();
+        foreach(ProcessInfo p in this.processInfo)
+        {
+            var match = matchRegex.Match(p.ToString());
+            if (match.Length > 0)
+                matches.Add(p);
+        }
+        return matches;
     }
 };
 
