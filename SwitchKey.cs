@@ -121,7 +121,7 @@ class WindowSelector : Form
           if (matches.Count == 1)
           {
               this.searchBox.Text = matches[0].ToString();
-              System.Threading.Thread.Sleep(200);
+              System.Threading.Thread.Sleep(500);
               DisplaySelectedWindow();
           }
           this.searchBox.Select(matchText.Length,
@@ -150,11 +150,11 @@ class ProcessInfo
 
     public ProcessInfo(Process p)
     {
-      this.Process = p;
+        this.Process = p;
     }
 
     public override String ToString()
     {
-      return Process.ProcessName + " - " + Process.MainWindowTitle;
+        return Process.ProcessName + " - " + Process.MainWindowTitle;
     }
 }
