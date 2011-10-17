@@ -84,6 +84,8 @@ class WindowSelector : Form
           DisplaySelectedWindow(); 
       else if (e.KeyCode == Keys.Escape)
           this.Visible = false;
+      else if(e.KeyCode == Keys.Down || e.KeyCode == Keys.Up)
+          return; // Ignore
       else
           PerformSearch();
     }
